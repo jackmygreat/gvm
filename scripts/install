@@ -3,7 +3,8 @@
 
 function show_usage() {
 	echo "Usage: gvm install [version] [options]"
-	echo "    -s,  --source=SOURCE      Install Go from specified source."
+	echo "    -s                        Install Go from default source."
+	echo "    --source=SOURCE           Install Go from specified source."
 	echo "    -n,  --name=NAME          Override the default name for this version."
 	echo "    -pb, --with-protobuf      Install Go protocol buffers."
 	echo "    -b,  --with-build-tools   Install package build tools."
@@ -24,9 +25,15 @@ read_command_line() {
 	GO_SOURCE_URL=https://github.com/golang/go
 	for i in "$@"; do
 		case $i in
-			-s=*|--source=*)
+			-s)
+				INSTALL_SOURCE="source"
+			;;
+
+	    --source=*)
+	      INSTALL_SOURCE="source"
 				GO_SOURCE_URL=$(echo "$i" | sed 's/[-a-zA-Z0-9]*=//')
 			;;
+
 			-n=*|--name=*)
 				GO_NAME=$(echo "$i" | sed 's/[-a-zA-Z0-9]*=//')
 			;;
@@ -193,8 +200,10 @@ download_binary() {
 	GO_BINARY_URL="${GO_BINARY_BASE_URL}/${GO_BINARY_FILE}"
 	GO_BINARY_PATH=${GVM_ROOT}/archive/${GO_BINARY_FILE}
 
+        echo $GO_BINARY_URL
+
 	if [ ! -f $GO_BINARY_PATH ]; then
-		curl -s -f -L $GO_BINARY_URL > ${GO_BINARY_PATH}
+		curl --progress-bar -f -L $GO_BINARY_URL > ${GO_BINARY_PATH}
 
 		if [[ $? -ne 0 ]]; then
 			display_error "Failed to download binary go"
@@ -324,8 +333,10 @@ main() {
 			display_message "Falling back to source installation of $GO_NAME"
 			install_from_source
 		}
+	elif [[ "x$INSTALL_SOURCE" == "xsource" ]]; then
+	    install_from_source
 	else
-		install_from_source
+		echo "Invalid option,try -B or -s"
 	fi
 
 	cd "$GO_INSTALL_ROOT" && find . > manifest
